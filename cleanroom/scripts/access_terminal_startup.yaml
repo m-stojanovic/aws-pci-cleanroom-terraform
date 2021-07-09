@@ -1,0 +1,46 @@
+#cloud-config
+users:
+  # - default
+  - name : username_1
+    gecos: User 1
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    groups: users, admin
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${username_1_pub_ssh}
+  - name : username_2
+    gecos: User 2
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    groups: users, admin
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${username_2_pub_ssh}
+  - name : username_3
+    gecos: User 3
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    groups: users, admin
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${username_3_pub_ssh}
+
+package_update: true
+packages:
+  - libpam-google-authenticator
+
+runcmd:
+  - sudo sed -i "s/ChallengeResponseAuthentication no/ChallengeResponseAuthentication yes/g" /etc/ssh/sshd_config
+  - sudo sed -i "s/@include common-auth/#@include common-auth/g" /etc/pam.d/sshd
+  - sudo echo -e "auth required pam_google_authenticator.so nullok\nauth required pam_permit.so" >> /etc/pam.d/sshd
+  - sudo echo "AuthenticationMethods publickey,password publickey,keyboard-interactive" >> /etc/ssh/sshd_config
+  -  sed -i "s/#Port 22/Port ${ssh_port}/g" /etc/ssh/sshd_config
+  - sudo systemctl restart sshd
+  - sudo hostnamectl set-hostname access_terminal
+
+write_files:
+  - path: /etc/profile.d/bash_login.sh
+    encoding: b64
+    content: RklMRT0uZ29vZ2xlX2F1dGhlbnRpY2F0b3IKaWYgWyAhIC1mICIkRklMRSIgXTsgdGhlbgoJZ29vZ2xlLWF1dGhlbnRpY2F0b3IgLXQgLWQgLWYgLXIgMyAtUiAzMCAtdyAzCglzb3VyY2UgLmJhc2hyYwplbHNlCglzb3VyY2UgLmJhc2hyYwpmaQo=
+    permissions: '0644'
